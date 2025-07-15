@@ -8,7 +8,6 @@ console.log('🔗 Initializing server...')
 dotenv.config()
 
 const app = express()
-const PORT = process.env.PORT || 5001
 
 // Middleware
 app.use(cors({
@@ -24,21 +23,32 @@ const MONGODB_URI = process.env.MONGODB_URI
 const DB_NAME = 'abowe-whitelist'
 const COLLECTION_NAME = 'waitlist'
 
+// Global connection variable for serverless
+let cachedClient = null
+
 async function connectToDatabase() {
+  if (cachedClient) {
+    return cachedClient
+  }
+
   try {
     const client = new MongoClient(MONGODB_URI, {
       serverSelectionTimeoutMS: 5000,
     })
+    
     await client.connect()
+    cachedClient = client
     db = client.db(DB_NAME)
     console.log('✅ Connected to MongoDB Atlas')
     
     // Create indexes for better performance
     await db.collection(COLLECTION_NAME).createIndex({ email: 1 }, { unique: true })
     console.log('✅ Database indexes created')
+    
+    return client
   } catch (error) {
     console.error('❌ MongoDB connection error:', error)
-    process.exit(1)
+    throw error
   }
 }
 
@@ -48,10 +58,26 @@ const validateEmail = (email) => {
   return emailRegex.test(email)
 }
 
+// Middleware to ensure database connection
+const ensureDBConnection = async (req, res, next) => {
+  try {
+    if (!db) {
+      await connectToDatabase()
+    }
+    next()
+  } catch (error) {
+    console.error('Database connection failed:', error)
+    res.status(500).json({
+      success: false,
+      message: 'Database connection failed'
+    })
+  }
+}
+
 // Routes
 
 // Health check
-app.get('/api/health', (req, res) => {
+app.get('/api/health', ensureDBConnection, (req, res) => {
   res.json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
@@ -60,7 +86,7 @@ app.get('/api/health', (req, res) => {
 })
 
 // Get waitlist statistics
-app.get('/api/waitlist/stats', async (req, res) => {
+app.get('/api/waitlist/stats', ensureDBConnection, async (req, res) => {
   try {
     const collection = db.collection(COLLECTION_NAME)
     const count = await collection.countDocuments()
@@ -82,7 +108,7 @@ app.get('/api/waitlist/stats', async (req, res) => {
 })
 
 // Add to waitlist
-app.post('/api/waitlist', async (req, res) => {
+app.post('/api/waitlist', ensureDBConnection, async (req, res) => {
   try {
     const { email } = req.body
 
@@ -148,7 +174,7 @@ app.post('/api/waitlist', async (req, res) => {
 })
 
 // Check if email exists (for frontend validation)
-app.post('/api/waitlist/check', async (req, res) => {
+app.post('/api/waitlist/check', ensureDBConnection, async (req, res) => {
   try {
     const { email } = req.body
 
@@ -193,21 +219,5 @@ app.use('*', (req, res) => {
   })
 })
 
-// Start server
-async function startServer() {
-  console.log('🔗 Starting server...')
-  await connectToDatabase()
-  
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`)
-    console.log(`📊 Health check: http://localhost:${PORT}/api/health`)
-    console.log(`🔗 API endpoints:`)
-    console.log(`   POST /api/waitlist - Add to waitlist`)
-    console.log(`   POST /api/waitlist/check - Check if email exists`)
-    console.log(`   GET  /api/waitlist/stats - Get statistics`)
-  })
-}
-
-startServer().catch(console.error)
-
+// Export for Vercel
 export default app
