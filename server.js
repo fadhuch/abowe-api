@@ -10,16 +10,16 @@ const app = express()
 const PORT = process.env.PORT || 5001
 
 // Middleware
-// app.use(cors({
-//   origin: process.env.NODE_ENV === 'production' 
-//     ? ['https://your-domain.com'] // Replace with your actual domain
-//     : ['http://localhost:5173', 'http://localhost:3000']
-// }))
 app.use(cors({
-  origin: '*', // Allow all origins for development
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://www.abowe.ae'] // Replace with your actual domain
+    : ['http://localhost:5173', 'http://localhost:3000']
 }))
+// app.use(cors({
+//   origin: '*', // Allow all origins for development
+//   methods: ['GET', 'POST'],
+//   allowedHeaders: ['Content-Type', 'Authorization']
+// }))
 app.use(express.json({ limit: '10mb' }))
 
 // MongoDB connection
