@@ -197,6 +197,7 @@ app.use('*', (req, res) => {
 
 // Start server
 async function startServer() {
+  console.log('🔗 Starting server...')
   await connectToDatabase()
   
   app.listen(PORT, () => {
