@@ -33,9 +33,19 @@ The API will be available at `http://localhost:5001`
 ## API Endpoints
 
 - `GET /api/health` - Health check
+- `GET /api/waitlist` - Get all waitlist entries (with pagination)
 - `POST /api/waitlist` - Add email to waitlist
 - `POST /api/waitlist/check` - Check if email exists
 - `GET /api/waitlist/stats` - Get waitlist statistics
+
+### GET /api/waitlist Query Parameters
+
+- `page` (optional) - Page number for pagination (default: 1)
+- `limit` (optional) - Number of entries per page (default: 50, max: 100)
+- `sortBy` (optional) - Field to sort by (default: 'createdAt')
+- `sortOrder` (optional) - Sort order 'asc' or 'desc' (default: 'desc')
+
+**Example:** `GET /api/waitlist?page=1&limit=25&sortBy=email&sortOrder=asc`
 
 ## Vercel Deployment
 

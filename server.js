@@ -81,6 +81,71 @@ app.get('/api/waitlist/stats', async (req, res) => {
   }
 })
 
+// Get all waitlist entries
+app.get('/api/admin/waitlist', async (req, res) => {
+  try {
+    const collection = db.collection(COLLECTION_NAME)
+    
+    // Get query parameters for pagination and sorting
+    const page = parseInt(req.query.page) || 1
+    const limit = parseInt(req.query.limit) || 50
+    const sortBy = req.query.sortBy || 'createdAt'
+    const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1
+    
+    // Validate limit (max 100 entries per request)
+    const maxLimit = Math.min(limit, 100)
+    const skip = (page - 1) * maxLimit
+    
+    // Build sort object
+    const sort = {}
+    sort[sortBy] = sortOrder
+    
+    // Get total count for pagination info
+    const totalCount = await collection.countDocuments()
+    const totalPages = Math.ceil(totalCount / maxLimit)
+    
+    // Get waitlist entries
+    const entries = await collection
+      .find({})
+      .sort(sort)
+      .skip(skip)
+      .limit(maxLimit)
+      .project({
+        email: 1,
+        createdAt: 1,
+        source: 1,
+        _id: 1
+      })
+      .toArray()
+    
+    res.json({
+      success: true,
+      data: {
+        entries,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalCount,
+          hasNextPage: page < totalPages,
+          hasPrevPage: page > 1,
+          limit: maxLimit
+        },
+        sorting: {
+          sortBy,
+          sortOrder: sortOrder === 1 ? 'asc' : 'desc'
+        }
+      }
+    })
+    
+  } catch (error) {
+    console.error('Error getting waitlist entries:', error)
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get waitlist entries'
+    })
+  }
+})
+
 // Add to waitlist
 app.post('/api/waitlist', async (req, res) => {
   try {
