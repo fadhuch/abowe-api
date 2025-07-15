@@ -3,7 +3,7 @@ import cors from 'cors'
 import { MongoClient } from 'mongodb'
 import dotenv from 'dotenv'
 
-console.log('🔗 Initializing server...')
+console.log('🔗 Initializing server...s')
 // Load environment variables
 dotenv.config()
 
