@@ -2,7 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import { MongoClient } from 'mongodb'
 import dotenv from 'dotenv'
-
+console.log('🔗 Initializing server...')
 // Load environment variables
 dotenv.config()
 
